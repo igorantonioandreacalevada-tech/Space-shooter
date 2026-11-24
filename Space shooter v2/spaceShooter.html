@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space shooter</title>
+    <link rel="shortcut icon" href="Nave.png" type="image/png">
+    <style>
+        *
+        {
+            font-family: "init", sans-serif;
+        }
+
+        body
+        {
+            margin: 0;
+        }
+
+        #nave
+        {
+            clip-path: polygon(
+                50% 0%, 
+                62% 20%, 
+                57% 20%, 
+                57% 45%, 
+                95% 65%, 
+                95% 80%, 
+                57% 70%, 
+                57% 90%, 
+                67% 100%, 
+                33% 100%, 
+                43% 90%, 
+                43% 70%, 
+                5% 80%, 
+                5% 65%, 
+                43% 45%, 
+                43% 20%, 
+                38% 20%
+            );
+
+            background-color: rgb(0, 0, 0);
+            top: 50vh;
+            left: 50vw;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            width: 5vh;
+            height: 5vh;
+        }
+
+        .laser
+        {
+            background-color: rgb(255, 0, 0);
+            width: 0.5vh;
+            height: 5vh;
+            border-radius: 5px;
+        }
+
+        .inimigo
+        {
+            background-image: url("money.png");
+            height: 5vh;
+            width: 5vh;
+            border-radius: 100vh;
+            clip-path: polygon(
+                50% 100%, 
+                70% 80%, 
+                65% 30%, 
+                85% 10%, 
+                85% 0%, 
+                50% 15%, 
+                15% 0%, 
+                15% 10%, 
+                35% 30%, 
+                30% 80%
+            );
+        }
+
+        #gameOverAlert
+        {
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: white; 
+            padding: 10vh; 
+            border: 0.3vh solid black; 
+            z-index: 9999;
+            justify-content: center;
+        }
+
+        .gameOverButtonD
+        {
+            justify-self: center;
+        }
+
+        .gameOverButton
+        {
+            background-color: rgb(255, 255, 255);
+            border: solid rgb(0, 0, 0);
+            width: 8vh;
+            padding: 1.5vh;
+            border-radius: 12px;
+            font-size: 3vh;
+            cursor: pointer;
+        }
+
+        .gameOver
+        {
+            font-size: 3vh;
+            color: rgb(0, 0, 0);
+        }
+
+        .info
+        {
+            position: fixed;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <div>
+            <p class="score">Score: <span id="score">0</span></p>
+        </div>
+        <div>
+            <p class="time">Your time: <span id="time">0</span></p>
+        </div>
+        <div>
+            <p class="shoot">Number of shoots: <span id="shoot">0</span></p>
+        </div>
+    </div>
+
+    <div id="gameOverAlert">
+        <p class="gameOver">Game Over! Você bateu em um missel.</p>  
+        <div class="gameOverButtonD">
+            <button onclick="fecharAlerta()" class="gameOverButton">OK</button>
+        </div>
+    </div>
+    <div id="nave"></div>
+    <script>
+        var nave = document.getElementById("nave")
+
+        var velocidade = 10;
+        
+        var x = nave.offsetLeft
+        var y = nave.offsetTop
+
+        var tecla = {};
+
+        var score = document.getElementById("score")
+        var time = document.getElementById("time")
+        var shoot = document.getElementById("shoot")
+
+        document.addEventListener("keydown", function(event)
+        {
+            tecla[event.key.toLowerCase()] = true
+        })
+
+        document.addEventListener("keyup", function(event)
+        {
+            tecla[event.key.toLowerCase()] = false
+        })
+
+        document.addEventListener("click", () => 
+        {
+            CreateLaser()
+        })
+
+        function verificarColisao(el1, el2) {
+            var rect1 = el1.getBoundingClientRect();
+            var rect2 = el2.getBoundingClientRect();
+
+            return (
+                rect1.left < rect2.right &&
+                rect1.right > rect2.left &&
+                rect1.top < rect2.bottom &&
+                rect1.bottom > rect2.top
+            );
+        }
+
+        function CreateLaser()
+        {
+            var laser = document.createElement("div")
+
+            shoot.innerHTML = Number(shoot.innerHTML) + 1
+
+            laser.className = "laser"
+
+            laser.style.position = "absolute"
+            laser.style.left = (nave.offsetLeft + nave.offsetWidth / nave.offsetHeight - 2) + "px"
+            laser.style.top = (nave.offsetTop + (nave.offsetHeight / 8)) + "px"
+
+            document.body.appendChild(laser)
+
+            var velocidadeLaser = 30;
+
+            MoveLaser(laser, velocidadeLaser)
+        }
+
+        function MoveLaser(laser, velocidade)
+        {
+            var y = laser.offsetTop
+
+            laser.style.top = (y - velocidade) + "px"
+
+            var inimigos = document.querySelectorAll(".inimigo");
+            for (var i = 0; i < inimigos.length; i++) {
+                if (verificarColisao(laser, inimigos[i])) {
+                    laser.remove(); // Remove o laser
+                    inimigos[i].remove(); // Remove o inimigo
+                    score.innerHTML = Number(score.innerHTML) + 1
+                    return; // Para a execução do movimento deste laser
+                }
+            }
+
+            if(y < -laser.offsetHeight)
+            {
+                laser.remove();
+                return;
+            }
+
+            requestAnimationFrame(function() {MoveLaser(laser, velocidade)})
+        }
+
+        function CreateEnemy()
+        {
+            var inimigo = document.createElement("div")
+            inimigo.className = "inimigo"
+
+            document.body.appendChild(inimigo)
+
+            var posicaoX = Math.random() * 90
+
+            var velocidade = 5
+
+            inimigo.style.position = "absolute"
+            inimigo.style.left = posicaoX + "vw"
+
+            MoveEnemy(inimigo, velocidade)
+        }
+
+        function MoveEnemy(inimigo, velocidade)
+        {
+            var y = inimigo.offsetTop
+
+            inimigo.style.top = (y + velocidade) + "px"
+
+            if(y > window.innerHeight)
+            {
+                inimigo.remove()
+                return
+            }
+
+            requestAnimationFrame(function() {MoveEnemy(inimigo, velocidade)})
+        }
+
+        function Move()
+        {
+            if(tecla["arrowup"] || tecla["w"])
+            {
+                y -= velocidade
+            }
+
+            if(tecla["arrowdown"] || tecla["s"])
+            {
+                y += velocidade
+            }
+
+            if(tecla["arrowleft"] || tecla["a"])
+            {
+                x -= velocidade
+            }
+
+            if(tecla["arrowright"] || tecla["d"])
+            {
+                x += velocidade
+            }
+
+            nave.style.top = y + "px"
+            nave.style.left = x + "px"
+
+            var inimigos = document.querySelectorAll(".inimigo");
+            for (var i = 0; i < inimigos.length; i++) {
+                if (verificarColisao(nave, inimigos[i])) {
+                    mostrarAlertaPersonalizado();
+                    for (var j = 0; j < inimigos.length; j++) 
+                    {
+                        inimigos[j].remove();
+                    }
+                    return;
+                }
+            }
+
+            requestAnimationFrame(Move)
+        }
+
+        function mostrarAlertaPersonalizado() 
+        {
+            document.getElementById('gameOverAlert').style.display = 'block';
+            nave.remove()
+            document.body.style.backgroundColor = "rgb(100, 100, 100)"
+        }
+
+        function fecharAlerta() {
+            document.getElementById('gameOverAlert').style.display = 'none';
+            location.reload(); // Se quiser reiniciar logo após clicar em OK
+        }
+
+        function Time()
+        {
+            time.innerHTML = Number(time.innerHTML) + 1
+        }
+
+        setInterval(CreateEnemy, 2000);
+        
+        setInterval(Time, 1000)
+
+        Move()
+        MoveLaser()
+        CreateLaser()
+    </script>
+</body>
+</html>
